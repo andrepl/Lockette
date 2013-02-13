@@ -12,12 +12,14 @@ package org.yi.acru.bukkit.Lockette;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -58,7 +60,7 @@ public class Lockette extends PluginCore{
 	
 	protected static FileConfiguration			strings = null;
 	protected final HashMap<String, Block>	playerList = new HashMap<String, Block>();
-
+        protected final HashSet<GroupProvider>  registeredGroupProviders = new HashSet<GroupProvider>();
 	final static int		materialTrapDoor = 96;
 	final static int		materialFenceGate = 107;
 	
@@ -155,7 +157,27 @@ public class Lockette extends PluginCore{
 		enabled = false;
 	}
 	
-	
+
+	public boolean registerGroupProvider(GroupProvider provider) {
+		return registeredGroupProviders.add(provider);
+	}
+
+	public boolean unregisterGroupProvider(GroupProvider provider) {
+		return registeredGroupProviders.remove(provider);
+	}
+
+	@Override
+	public boolean inGroup(World world, String player, String group) {
+		if (super.inGroup(world, player, group)) return true;
+		if (group.startsWith("[") && group.endsWith("]")) {
+			group = group.substring(1,group.length()-1);
+			for (GroupProvider p: registeredGroupProviders) {
+				if (p.playerInGroup(world, player, group)) return true;
+			}
+		}
+		return false;
+	}
+
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
 		if(!cmd.getName().equalsIgnoreCase("lockette")) return(false);
 		if(sender instanceof Player) return(true);	// Handling in command preprocess for now.
